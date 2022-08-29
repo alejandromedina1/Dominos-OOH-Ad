@@ -27,6 +27,12 @@ io.on('connection', (socket) => {
         console.log(instructions)
         socket.broadcast.emit('mupi-instructions', instructions)
     })
+    socket.on('interface', interface => {
+        socket.broadcast.emit('interface', interface)
+    })
+    socket.on('game over', interface => {
+        socket.broadcast.emit('interface', interface);
+    })
 })
 
 
