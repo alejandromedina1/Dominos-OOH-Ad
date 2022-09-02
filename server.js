@@ -1,7 +1,7 @@
 const express = require('express')
 const { Server } = require('socket.io')
 const PORT = 5050;
-const SERVER_IP = '192.168.1.2' //Use computer's IP
+const SERVER_IP = '172.30.70.73' //Use computer's IP
 
 const expressApp = express()
 expressApp.use(express.json())
@@ -17,21 +17,31 @@ const httpServer = expressApp.listen(PORT, () => {
 
 const io = new Server(httpServer, {path: '/real-time' })
 
+let user;
+
+expressApp.post('/userData', (request, response) => {
+    user = request.body
+    response.end();
+})
+
 io.on('connection', (socket) => {
     console.log('Connected!', socket.id)
 
     socket.on('device-size', deviceSize => {
         socket.broadcast.emit('mupi-size', deviceSize)
     })
-    socket.on('mobile-instructions', instructions => {
-        console.log(instructions)
-        socket.broadcast.emit('mupi-instructions', instructions)
+    socket.on('mobile-instructions', instruction => {
+        console.log(instruction)
+        socket.broadcast.emit('mupi-instructions', instruction)
     })
     socket.on('interface', interface => {
-        socket.broadcast.emit('interface', interface)
+        socket.broadcast.emit('currentInterface', interface)
     })
-    socket.on('game over', interface => {
-        socket.broadcast.emit('interface', interface);
+    socket.on('game-over', nextScreen => {
+        socket.broadcast.emit('next-interface', nextScreen);
+    })
+    socket.on('sendingUser', user => {
+        socket.broadcast.emit('catchingUser', user);
     })
 })
 

@@ -1,14 +1,36 @@
 const NGROK = `https://${window.location.hostname}`
+const DNS = getDNS;
 let socket = io(NGROK, {
     path: '/real-time'
 })
 console.log('Server IP: ', NGROK)
 
+let userName;
 let interface = 'HOME';
 let deviceWidth, deviceHeight = 0;
 let greenColor = 50;
 let time = 0;
 let counter = 30;
+let mupiScreens = [];
+let tokens = [];
+let currentScreen;
+let referenceToken;
+let changingToken;
+let tokenIndex;
+
+function preload() {
+    mupiScreens[0] = loadImage('./mupi-assets/MUPI-Home.png');
+    mupiScreens[1] = loadImage('./mupi-assets/MUPI-connected.png');
+    mupiScreens[2] = loadImage('./mupi-assets/MUPI-instrucciones.png');
+    mupiScreens[3] = loadImage('./mupi-assets/MUPI-Game.png');
+    mupiScreens[4] = loadImage('./mupi-assets/MUPI-Win.png');
+    mupiScreens[5] = loadImage('./mupi-assets/MUPI-Loose.png');
+    mupiScreens[6] = loadImage('./mupi-assets/MUPI-ThankYou.png');
+
+    for (let i = 0; i < 4; i++) {
+        tokens[i] = loadImage(`./mupi-assets/Tokens/${i+1}.png`)
+    }
+}
 
 function setup() {
     frameRate(60);
@@ -17,58 +39,68 @@ function setup() {
     canvas.style('position', 'fixed');
     canvas.style('top', '0');
     canvas.style('right', '0');
+    currentScreen = mupiScreens[0]
+
+    let randomIndex = Math.floor(Math.random() * 4)
+    console.log(randomIndex)
+    referenceToken = tokens[randomIndex];
 }
 
 function draw() {
     background(255, 50)
-    screens();
-    fill(0)
-    const x = deviceWidth / 2
-    const y = deviceHeight / 2
-    ellipse(pmouseX, pmouseY, 50, 50)
-    fill(0, 0, 255)
-    //ellipse(x, y, ballSize, ballSize)
+    changingToken = tokens[tokenIndex]
+    image(currentScreen, 0, 0, 440, 660);
+    changeScreen();
 }
 
-function screens() {
+function changeScreen() {
     switch (interface) {
         case 'HOME':
-            rectMode(CENTER)
-            const X = deviceWidth / 2
-            const Y = deviceHeight / 2
-            fill(0);
-            rect(X, Y, 300, 50);
-            textAlign(CENTER, CENTER);
-            textSize(15);
-            fill(255);
-            text('Phone connected!', X, Y);
+
+            break;
+        case 'CONNECTED':
+            currentScreen = mupiScreens[1];
+            //rectMode(CENTER)
+            //fill(0);
+            //const X = deviceWidth / 2
+            //const Y = deviceHeight / 2
+            //rect(X, Y, 300, 50);
+            //textAlign(CENTER, CENTER);
+            //textSize(15);
+            //fill(255);
+            //text('Phone connected!', X, Y);
             break;
         case 'INSTRUCTIONS':
             fill(0)
-            text('Here you will see the instructions', 300, 200)
+            currentScreen = mupiScreens[2];
             break;
         case 'GAME':
-            fill(0, 150, greenColor)
-            const x = deviceWidth / 4 * 3
-            const y = deviceHeight / 4 * 3
-            const xRef = deviceWidth / 4
+            currentScreen = mupiScreens[3]
+            imageMode(CENTER)
+            image(referenceToken, 145, 330, 231, 275)
+            image(changingToken, 309, 330, 231, 275)
+            imageMode(CORNER)
             countDown();
-            ellipse(x, y, 100, 100)
-            fill(0, 150, 255)
-            ellipse(xRef, y, 100, 100)
-            if (greenColor >= 100) {
-                greenColor = 182;
+            //ellipse(x, y, 100, 100)
+            //fill(0, 150, 255)
+            //ellipse(xRef, y, 100, 100)
+            if (referenceToken === changingToken) {
                 interface = 'WON'
             }
-            socket.emit('game over', interface)
+            socket.emit('game-over', interface)
             break;
         case 'WON':
-            fill(0);
-            text('You Won!', 200, 500);
+            currentScreen = mupiScreens[4]
             break;
         case 'LOST':
-            fill(0);
-            text('LOST!', 200, 300);
+            currentScreen = mupiScreens[5]
+            break;
+        case 'THANK YOU':
+            currentScreen = mupiScreens[6]
+            fill('#333333')
+            textAlign(CENTER, CENTER);
+            textSize(30)
+            text(userName, 220, 320);
             break;
     }
 }
@@ -78,22 +110,20 @@ function countDown() {
     if (time % 60 == 0) {
         counter--;
     }
-    textSize(20);
-    text('Time left: ' + counter, 100, 50);
+    textSize(60);
+    fill(255);
+    textAlign(LEFT, CENTER)
+    //textStyle(BOLD);
+    textFont('Laqonic4FUnicase-SemiBold')
+    text(counter, 226, 530);
     if (counter === 0) {
         interface = 'LOST'
     }
+    socket.emit('game over', interface)
 }
 
-socket.on('mupi-instructions', instructions => {
-    let {
-        pAccelerationX,
-        pAccelerationY,
-        pAccelerationZ
-    } = instructions
-    if (pAccelerationY > 30) {
-        greenColor = 255
-    }
+socket.on('mupi-instructions', index => {
+    tokenIndex = index;
 })
 
 socket.on('mupi-size', deviceSize => {
@@ -103,9 +133,13 @@ socket.on('mupi-size', deviceSize => {
     } = deviceSize
     deviceWidth = windowWidth
     deviceHeight = windowHeight
-    console.log(`User is using a smatphone size of ${deviceWidth} and ${deviceWidth}`)
+    console.log(`User is using a smatphone size of ${deviceWidth} and ${deviceHeight}`)
 })
 
-socket.on('interface', newInterface => {
+socket.on('currentInterface', newInterface => {
     interface = newInterface;
+})
+
+socket.on('catchingUser', newUser => {
+    userName = newUser.name;
 })
