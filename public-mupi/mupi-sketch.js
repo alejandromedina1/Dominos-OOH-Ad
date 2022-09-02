@@ -39,6 +39,7 @@ function setup() {
     canvas.style('position', 'fixed');
     canvas.style('top', '0');
     canvas.style('right', '0');
+
     currentScreen = mupiScreens[0]
 
     let randomIndex = Math.floor(Math.random() * 4)
@@ -56,19 +57,10 @@ function draw() {
 function changeScreen() {
     switch (interface) {
         case 'HOME':
-
+            currentScreen = mupiScreens[0];
             break;
         case 'CONNECTED':
             currentScreen = mupiScreens[1];
-            //rectMode(CENTER)
-            //fill(0);
-            //const X = deviceWidth / 2
-            //const Y = deviceHeight / 2
-            //rect(X, Y, 300, 50);
-            //textAlign(CENTER, CENTER);
-            //textSize(15);
-            //fill(255);
-            //text('Phone connected!', X, Y);
             break;
         case 'INSTRUCTIONS':
             fill(0)
@@ -81,9 +73,6 @@ function changeScreen() {
             image(changingToken, 309, 330, 231, 275)
             imageMode(CORNER)
             countDown();
-            //ellipse(x, y, 100, 100)
-            //fill(0, 150, 255)
-            //ellipse(xRef, y, 100, 100)
             if (referenceToken === changingToken) {
                 interface = 'WON'
             }
@@ -113,7 +102,6 @@ function countDown() {
     textSize(60);
     fill(255);
     textAlign(LEFT, CENTER)
-    //textStyle(BOLD);
     textFont('Laqonic4FUnicase-SemiBold')
     text(counter, 226, 530);
     if (counter === 0) {

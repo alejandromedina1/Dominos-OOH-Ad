@@ -9,7 +9,6 @@ let interface = 'CONNECTED';
 let user = {};
 let mobileScreens = [];
 let currentScreen;
-let isShaken = false;
 let tokens = [];
 let currentToken;
 let currentIndex;
@@ -34,16 +33,19 @@ function setup() {
     canvas.style('position', 'fixed');
     canvas.style('top', '0');
     canvas.style('right', '0');
+
     firstName = createInput('');
     firstName.position(20, 210);
     firstName.size(370, 17);
     firstName.input(nameInputEvent);
     firstName.style('display', 'none')
+
     lastName = createInput('')
     lastName.position(20, 250)
     lastName.size(370, 17)
     lastName.input(lastNameInputEvent)
     lastName.style('display', 'none')
+
     phone = createInput('')
     phone.position(20, 300)
     phone.size(370, 17)
@@ -62,6 +64,7 @@ function setup() {
     })
     interactionButton.position(windowWidth / 4, windowHeight / 5 * 4)
     interactionButton.style('display', 'none')
+
     currentIndex = Math.floor(Math.random() * 4)
     socket.emit('mobile-instructions', currentIndex)
 }
@@ -83,7 +86,6 @@ function windowResized() {
 
 }
 
-
 function draw() {
     console.log(currentIndex)
     background(255, 50)
@@ -96,19 +98,10 @@ function draw() {
 function screens() {
     switch (interface) {
         case 'CONNECTED':
-            const X = windowWidth / 8
-            const Y = windowHeight / 3 * 2
-            fill(0);
-            rect(X, Y, 500, 200);
             socket.emit('interface', interface)
             break;
         case 'INSTRUCTIONS':
             currentScreen = mobileScreens[1];
-            const xRect = windowWidth / 8
-            const yRect = windowHeight / 5 * 3
-            rect(xRect, yRect, 700, 300);
-            fill(255);
-            text('Click here to continue', xRect, yRect);
             break;
         case 'GAME':
             currentScreen = mobileScreens[2];
@@ -123,8 +116,6 @@ function screens() {
             lastName.style('display', 'block')
             phone.style('display', 'block')
             interactionButton.style('display', 'none')
-            fill(0);
-            rect(0, 330, windowWidth, 500);
             break;
         case 'LOST':
             currentScreen = mobileScreens[4];
@@ -156,9 +147,9 @@ function changeScreen() {
             socket.emit('interface', interface)
             break;
         case 'INSTRUCTIONS':
-            const xRect = windowWidth / 8
-            const yRect = windowHeight / 5 * 3
-            if (xRect < mouseX && mouseX < xRect + 700 && yRect < mouseY && mouseY < yRect + 300) {
+            const newX = windowWidth / 8
+            const newY = windowHeight / 5 * 3
+            if (newX < mouseX && mouseX < newX + 700 && newY < mouseY && mouseY < newY + 300) {
                 interface = 'GAME'
                 console.log('Click')
             }
