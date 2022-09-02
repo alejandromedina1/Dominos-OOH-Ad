@@ -8,7 +8,6 @@ console.log('Server IP: ', NGROK)
 let userName;
 let interface = 'HOME';
 let deviceWidth, deviceHeight = 0;
-let greenColor = 50;
 let time = 0;
 let counter = 30;
 let mupiScreens = [];
@@ -107,7 +106,7 @@ function countDown() {
     if (counter === 0) {
         interface = 'LOST'
     }
-    socket.emit('game over', interface)
+    socket.emit('game-over', interface)
 }
 
 socket.on('mupi-instructions', index => {

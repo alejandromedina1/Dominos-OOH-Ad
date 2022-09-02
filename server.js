@@ -19,8 +19,9 @@ const io = new Server(httpServer, {path: '/real-time' })
 
 let user;
 
-expressApp.post('/userData', (request, response) => {
+expressApp.post('/app', (request, response) => {
     user = request.body
+    console.log(user);
     response.end();
 })
 

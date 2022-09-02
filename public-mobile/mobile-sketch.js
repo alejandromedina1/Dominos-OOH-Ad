@@ -125,6 +125,7 @@ function screens() {
             interactionButton.style('display', 'none')
             break;
         case 'THANK YOU':
+            sendData(user);
             currentScreen = mobileScreens[5];
             firstName.style('display', 'none')
             lastName.style('display', 'none')
@@ -188,11 +189,11 @@ async function sendData(user) {
     const request = {
         method: 'POST',
         headers: {
-            "Content-type": "application/json"
+            "Content-Type" : "application/json"
         },
         body: JSON.stringify(user)
     }
-    await fetch(`${DNS}/sendUserData`, request)
+    await fetch(`${DNS}/app`, request)
 }
 
 socket.on('next-interface', nextInterface => {
