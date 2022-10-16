@@ -5,28 +5,17 @@ let socket = io(NGROK, {
     path: '/real-time'
 })
 
-let interface = 'CONNECTED';
+let interface = '';
 let user = {};
 let mobileScreens = [];
 let currentScreen;
-let tokens = [];
-let currentToken;
 let currentIndex;
-let interactionButton;
 
 function preload() {
-    mobileScreens[0] = loadImage('./mobile-assets/MOBILE-connected.png')
-    mobileScreens[1] = loadImage('./mobile-assets/MOBILE-instructions.png')
-    mobileScreens[2] = loadImage('./mobile-assets/MOBILE-game.png')
-    mobileScreens[3] = loadImage('./mobile-assets/MOBILE-WinSignIn.png')
-    mobileScreens[4] = loadImage('./mobile-assets/MOBILE-LooseSignIn.png')
-    mobileScreens[5] = loadImage('./mobile-assets/MOBILE-ThankYou.png')
-
-    for (let i = 0; i < 4; i++) {
-        tokens[i] = loadImage(`./mobile-assets/Tokens/${i+1}.png`)
-    }
+    mobileScreens[0] = loadImage('./mobile-assets/MOBILE-WinSignIn.png')
+    mobileScreens[1] = loadImage('./mobile-assets/MOBILE-LooseSignIn.png')
+    mobileScreens[2] = loadImage('./mobile-assets/MOBILE-ThankYou.png')
 }
-
 function setup() {
     canvas = createCanvas(windowWidth, windowHeight);
     canvas.style('z-index', '-1');
@@ -52,21 +41,13 @@ function setup() {
     phone.input(phoneInputEvent)
     phone.style('display', 'none')
 
-    currentScreen = mobileScreens[0]
-
+    currentScreen = mobileScreens[currentIndex];
     socket.emit('device-size', {
         windowWidth,
         windowHeight
     });
-    interactionButton = createButton("Allow interaction")
-    interactionButton.mousePressed(function () {
-        DeviceOrientationEvent.requestPermission();
-    })
-    interactionButton.position(windowWidth / 4, windowHeight / 5 * 4)
-    interactionButton.style('display', 'none')
-
-    currentIndex = Math.floor(Math.random() * 4)
-    socket.emit('mobile-instructions', currentIndex)
+    console.log(currentIndex);
+    console.log(interface);
 }
 
 function nameInputEvent() {
@@ -87,46 +68,38 @@ function windowResized() {
 }
 
 function draw() {
-    console.log(currentIndex)
     background(255, 50)
-    image(currentScreen, 0, 0, windowWidth, windowHeight);
+    socket.on('next-interface', nextInterface => {
+        interface = nextInterface;
+        if (interface === 'WON') {
+            currentIndex = 0;
+        } else {
+            currentIndex = 1;
+        }
+    })
+    //image(currentScreen, 0, 0);
+    //image(mobileScreens[currentIndex], 0, 0)x
     screens();
-    currentToken = tokens[currentIndex]
-    fill(0)
 }
 
 function screens() {
+    console.log(interface);
     switch (interface) {
-        case 'CONNECTED':
-            socket.emit('interface', interface)
-            break;
-        case 'INSTRUCTIONS':
-            currentScreen = mobileScreens[1];
-            break;
-        case 'GAME':
-            currentScreen = mobileScreens[2];
-            imageMode(CENTER)
-            image(currentToken, windowWidth / 2, windowHeight / 2, 298, 359);
-            imageMode(CORNER)
-            interactionButton.style('display', 'block')
-            break;
         case 'WON':
-            currentScreen = mobileScreens[3];
+            currentIndex = 0;
             firstName.style('display', 'block')
             lastName.style('display', 'block')
             phone.style('display', 'block')
-            interactionButton.style('display', 'none')
             break;
         case 'LOST':
-            currentScreen = mobileScreens[4];
+            currentIndex = 1;
             firstName.style('display', 'block')
             lastName.style('display', 'block')
             phone.style('display', 'block')
-            interactionButton.style('display', 'none')
             break;
         case 'THANK YOU':
             sendData(user);
-            currentScreen = mobileScreens[5];
+            currentIndex = 2;
             firstName.style('display', 'none')
             lastName.style('display', 'none')
             phone.style('display', 'none')
@@ -136,44 +109,8 @@ function screens() {
     }
 }
 
-function changeScreen() {
-    switch (interface) {
-        case 'CONNECTED':
-            const X = windowWidth / 8
-            const Y = windowHeight / 3 * 2
-            if (X < mouseX && mouseX < X + 500 && Y < mouseY && mouseY < Y + 200) {
-                interface = 'INSTRUCTIONS'
-                console.log('Click')
-            }
-            socket.emit('interface', interface)
-            break;
-        case 'INSTRUCTIONS':
-            const newX = windowWidth / 8
-            const newY = windowHeight / 5 * 3
-            if (newX < mouseX && mouseX < newX + 700 && newY < mouseY && mouseY < newY + 300) {
-                interface = 'GAME'
-                console.log('Click')
-            }
-            socket.emit('interface', interface)
-            break;
-        case 'GAME':
-            //
-            break;
-        case 'WON':
-            break;
-        case 'LOST':
-            break;
-    }
-}
-
 function mousePressed() {
-    changeScreen();
     sendUserData();
-}
-
-function deviceShaken() {
-    currentIndex = Math.floor(Math.random() * 4)
-    socket.emit('mobile-instructions', currentIndex)
 }
 
 function sendUserData() {
@@ -193,9 +130,5 @@ async function sendData(user) {
         },
         body: JSON.stringify(user)
     }
-    await fetch(`${DNS}/app`, request)
+    await fetch(`/user`, request)
 }
-
-socket.on('next-interface', nextInterface => {
-    interface = nextInterface;
-})

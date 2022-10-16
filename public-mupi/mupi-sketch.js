@@ -9,13 +9,17 @@ let userName;
 let interface = 'HOME';
 let deviceWidth, deviceHeight = 0;
 let time = 0;
-let counter = 30;
+let counter = 60;
 let mupiScreens = [];
 let tokens = [];
 let currentScreen;
+let currentIndex;
 let referenceToken;
 let changingToken;
 let tokenIndex;
+let previousSignal = 0;
+let sensorState = false;
+let sensorIsActivated = false;
 
 function preload() {
     mupiScreens[0] = loadImage('./mupi-assets/MUPI-Home.png');
@@ -25,6 +29,8 @@ function preload() {
     mupiScreens[4] = loadImage('./mupi-assets/MUPI-Win.png');
     mupiScreens[5] = loadImage('./mupi-assets/MUPI-Loose.png');
     mupiScreens[6] = loadImage('./mupi-assets/MUPI-ThankYou.png');
+
+    currentIndex = 0;
 
     for (let i = 0; i < 4; i++) {
         tokens[i] = loadImage(`./mupi-assets/Tokens/${i+1}.png`)
@@ -39,16 +45,23 @@ function setup() {
     canvas.style('top', '0');
     canvas.style('right', '0');
 
-    currentScreen = mupiScreens[0]
+    currentScreen = mupiScreens[currentIndex];
 
+    referenceToken = tokens[indexGenerator()];
+    tokenIndex = indexGenerator()
+    changingToken = tokens[tokenIndex];
+}
+
+function indexGenerator() {
     let randomIndex = Math.floor(Math.random() * 4)
     console.log(randomIndex)
-    referenceToken = tokens[randomIndex];
+    return randomIndex;
 }
 
 function draw() {
     background(255, 50)
-    changingToken = tokens[tokenIndex]
+    currentScreen = mupiScreens[currentIndex];
+    changingToken = tokens[tokenIndex];
     image(currentScreen, 0, 0, 440, 660);
     changeScreen();
 }
@@ -56,35 +69,72 @@ function draw() {
 function changeScreen() {
     switch (interface) {
         case 'HOME':
-            currentScreen = mupiScreens[0];
+            currentIndex = 0;
+            /*socket.on('arduino-message', signal => {
+                if (signal.motionSignal !== 0) {
+                    interface = 'CONNECTED';
+                }
+            })*/
             break;
         case 'CONNECTED':
-            currentScreen = mupiScreens[1];
+            currentIndex = 1;
+            /*socket.on('arduino-message', signal => {
+                if (signal.motionSignal !== 0) {
+                    interface = 'INSTRUCTIONS';
+                }
+            })*/
             break;
         case 'INSTRUCTIONS':
             fill(0)
-            currentScreen = mupiScreens[2];
+            currentIndex = 2;
+            /*socket.on('arduino-message', signal => {
+                if (signal.motionSignal !== 0) {
+                    interface = 'GAME';
+                }
+            })*/
             break;
         case 'GAME':
-            currentScreen = mupiScreens[3]
+            currentIndex = 3;
             imageMode(CENTER)
             image(referenceToken, 145, 330, 231, 275)
             image(changingToken, 309, 330, 231, 275)
             imageMode(CORNER)
             countDown();
+            /*sensorState = false;
+            sensorIsActivated = false;
+            socket.on('arduino-message', signal => {
+                if (signal.motionSignal !== 0 && interface === 'GAME') {
+                    sensorState = true
+                    if (sensorState && !sensorIsActivated) {
+                        sensorIsActivated = true;
+                        tokenIndex = indexGenerator()
+                    } else if (!sensorState && sensorIsActivated) {
+                        sensorIsActivated = false;
+                    }
+                }
+            })*/
             if (referenceToken === changingToken) {
                 interface = 'WON'
             }
-            socket.emit('game-over', interface)
             break;
         case 'WON':
-            currentScreen = mupiScreens[4]
+            //tokenIndex = referenceToken;
+            socket.emit('game-over', interface)
+            console.log(interface);
+            sensorState = false;
+            sensorIsActivated = false;
+            currentIndex = 4;
             break;
         case 'LOST':
-            currentScreen = mupiScreens[5]
+            socket.emit('game-over', interface)
+            //tokenIndex = referenceToken;
+            console.log(interface);
+            sensorState = false;
+            sensorIsActivated = false;
+            currentIndex = 5;
             break;
         case 'THANK YOU':
-            currentScreen = mupiScreens[6]
+            currentIndex = 6;
             fill('#333333')
             textAlign(CENTER, CENTER);
             textSize(30)
@@ -106,12 +156,34 @@ function countDown() {
     if (counter === 0) {
         interface = 'LOST'
     }
-    socket.emit('game-over', interface)
 }
 
-socket.on('mupi-instructions', index => {
-    tokenIndex = index;
-})
+async function gameResult() {
+    let result;
+
+    if (interface === 'WON') {
+        result = 'W'
+    }
+
+    if (interface === 'LOOSE') {
+        result = 'L'
+    }
+
+    const request = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            result
+        })
+    }
+    await fetch('/gameResult', request);
+}
+
+if (interface === 'WIN' || interface === 'LOOSE') {
+    gameResult();
+}
 
 socket.on('mupi-size', deviceSize => {
     let {
@@ -129,4 +201,46 @@ socket.on('currentInterface', newInterface => {
 
 socket.on('catchingUser', newUser => {
     userName = newUser.name;
+})
+
+socket.on('arduino-message', signal => {
+    switch (interface) {
+        case 'HOME':
+            if (signal.motionSignal !== 0) {
+                interface = 'CONNECTED';
+            }
+            break;
+        case 'CONNECTED':
+            if (signal.motionSignal !== 0) {
+                interface = 'INSTRUCTIONS';
+            }
+            break;
+        case 'INSTRUCTIONS':
+            if (signal.motionSignal !== 0) {
+                interface = 'GAME';
+            }
+            break;
+        case 'GAME':
+            sensorState = false;
+            sensorIsActivated = false;
+            if (signal.motionSignal !== 0 && interface === 'GAME') {
+                sensorState = true
+                if (sensorState && !sensorIsActivated) {
+                    sensorIsActivated = true;
+                    tokenIndex = indexGenerator()
+                } else if (!sensorState && sensorIsActivated) {
+                    sensorIsActivated = false;
+                }
+            }
+            break;
+        case 'WON':
+
+            break;
+        case 'LOST':
+
+            break;
+        case 'THANK YOU':
+
+            break;
+    }
 })
