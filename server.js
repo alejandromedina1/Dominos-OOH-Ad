@@ -41,7 +41,8 @@ expressApp.post('/user', (request, response) => {
 expressApp.post('/gameResult', (request, response) => {
     console.log(request.body);
     let state = request.body;
-    serialPort.write(state);
+    console.log(state.result);
+    serialPort.write(state.result);
     response.end();
 })
 

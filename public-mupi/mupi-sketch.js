@@ -5,7 +5,7 @@ let socket = io(NGROK, {
 })
 console.log('Server IP: ', NGROK)
 
-let userName;
+let userName = '';
 let interface = 'HOME';
 let deviceWidth, deviceHeight = 0;
 let time = 0;
@@ -50,6 +50,13 @@ function setup() {
     referenceToken = tokens[indexGenerator()];
     tokenIndex = indexGenerator()
     changingToken = tokens[tokenIndex];
+
+    if (referenceToken === changingToken) {
+        tokenIndex = indexGenerator()
+        if (referenceToken === changingToken) {
+            tokenIndex = indexGenerator()
+        }
+    }
 }
 
 function indexGenerator() {
@@ -66,7 +73,7 @@ function draw() {
     changeScreen();
 }
 
-function changeScreen() {
+async function changeScreen() {
     switch (interface) {
         case 'HOME':
             currentIndex = 0;
@@ -114,11 +121,15 @@ function changeScreen() {
                 }
             })*/
             if (referenceToken === changingToken) {
-                interface = 'WON'
+                setTimeout(() => {
+                    interface = 'WON'
+                    gameResult();
+                }, 3000)
             }
             break;
         case 'WON':
-            //tokenIndex = referenceToken;
+            tokenIndex = undefined;
+            counter = 60;
             socket.emit('game-over', interface)
             console.log(interface);
             sensorState = false;
@@ -127,7 +138,8 @@ function changeScreen() {
             break;
         case 'LOST':
             socket.emit('game-over', interface)
-            //tokenIndex = referenceToken;
+            tokenIndex = undefined;
+            counter = 60;
             console.log(interface);
             sensorState = false;
             sensorIsActivated = false;
@@ -138,7 +150,9 @@ function changeScreen() {
             fill('#333333')
             textAlign(CENTER, CENTER);
             textSize(30)
+            textFont('Poppins')
             text(userName, 220, 320);
+            console.log(userName)
             break;
     }
 }
@@ -155,6 +169,7 @@ function countDown() {
     text(counter, 226, 530);
     if (counter === 0) {
         interface = 'LOST'
+        gameResult();
     }
 }
 
@@ -163,9 +178,7 @@ async function gameResult() {
 
     if (interface === 'WON') {
         result = 'W'
-    }
-
-    if (interface === 'LOOSE') {
+    } else if (interface === 'LOST') {
         result = 'L'
     }
 
@@ -179,10 +192,6 @@ async function gameResult() {
         })
     }
     await fetch('/gameResult', request);
-}
-
-if (interface === 'WIN' || interface === 'LOOSE') {
-    gameResult();
 }
 
 socket.on('mupi-size', deviceSize => {
@@ -200,7 +209,7 @@ socket.on('currentInterface', newInterface => {
 })
 
 socket.on('catchingUser', newUser => {
-    userName = newUser.name;
+    userName = newUser.firstName;
 })
 
 socket.on('arduino-message', signal => {

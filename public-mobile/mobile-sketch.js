@@ -5,17 +5,21 @@ let socket = io(NGROK, {
     path: '/real-time'
 })
 
+
+
 let interface = '';
 let user = {};
 let mobileScreens = [];
 let currentScreen;
-let currentIndex;
+let currentIndex = 0;
 
 function preload() {
-    mobileScreens[0] = loadImage('./mobile-assets/MOBILE-WinSignIn.png')
-    mobileScreens[1] = loadImage('./mobile-assets/MOBILE-LooseSignIn.png')
-    mobileScreens[2] = loadImage('./mobile-assets/MOBILE-ThankYou.png')
+    mobileScreens[0] = loadImage('./mobile-assets/MOBILE-Skeleton.png')
+    mobileScreens[1] = loadImage('./mobile-assets/MOBILE-WinSignIn.png')
+    mobileScreens[2] = loadImage('./mobile-assets/MOBILE-LooseSignIn.png')
+    mobileScreens[3] = loadImage('./mobile-assets/MOBILE-ThankYou.png')
 }
+
 function setup() {
     canvas = createCanvas(windowWidth, windowHeight);
     canvas.style('z-index', '-1');
@@ -23,7 +27,7 @@ function setup() {
     canvas.style('top', '0');
     canvas.style('right', '0');
 
-    firstName = createInput('');
+    /*firstName = createInput('');
     firstName.position(20, 210);
     firstName.size(370, 17);
     firstName.input(nameInputEvent);
@@ -39,7 +43,7 @@ function setup() {
     phone.position(20, 300)
     phone.size(370, 17)
     phone.input(phoneInputEvent)
-    phone.style('display', 'none')
+    phone.style('display', 'none')*/
 
     currentScreen = mobileScreens[currentIndex];
     socket.emit('device-size', {
@@ -72,37 +76,45 @@ function draw() {
     socket.on('next-interface', nextInterface => {
         interface = nextInterface;
         if (interface === 'WON') {
-            currentIndex = 0;
-        } else {
             currentIndex = 1;
+        } else {
+            currentIndex = 2;
         }
     })
-    //image(currentScreen, 0, 0);
-    //image(mobileScreens[currentIndex], 0, 0)x
+    image(currentScreen, 0, 0);
+    image(mobileScreens[currentIndex], 0, 0)
     screens();
+
+    if (interface !== 'WON' || interface !== 'LOST') {
+        document.getElementById("container").style.display = "none";
+        //console.log('HIDE!')
+    } else {
+        document.getElementById("container").style.display = "block";
+        //console.log('SHOW!')
+    }
 }
 
 function screens() {
     console.log(interface);
     switch (interface) {
         case 'WON':
-            currentIndex = 0;
-            firstName.style('display', 'block')
+            currentIndex = 1;
+            /*firstName.style('display', 'block')
             lastName.style('display', 'block')
-            phone.style('display', 'block')
+            phone.style('display', 'block')*/
             break;
         case 'LOST':
-            currentIndex = 1;
-            firstName.style('display', 'block')
+            currentIndex = 2;
+            /*firstName.style('display', 'block')
             lastName.style('display', 'block')
-            phone.style('display', 'block')
+            phone.style('display', 'block')*/
+
             break;
         case 'THANK YOU':
-            sendData(user);
-            currentIndex = 2;
-            firstName.style('display', 'none')
+            currentIndex = 3;
+            /*firstName.style('display', 'none')
             lastName.style('display', 'none')
-            phone.style('display', 'none')
+            phone.style('display', 'none')*/
             socket.emit('sendingUser', user);
             socket.emit('interface', interface)
             break;
@@ -122,11 +134,32 @@ function sendUserData() {
     }
 }
 
+let firstName = document.getElementById('firstName');
+let lastName = document.getElementById('lastName');
+let phone = document.getElementById('phone');
+
+
+let button = document.getElementById('sendData')
+
+
+button.addEventListener("click", () => {
+    user = {
+        firstName: firstName.value,
+        lastName: lastName.value,
+        phone: phone.value
+    }
+    console.log(user)
+    sendData(user);
+    interface = 'THANK YOU'
+})
+
+
+
 async function sendData(user) {
     const request = {
         method: 'POST',
         headers: {
-            "Content-Type" : "application/json"
+            "Content-Type": "application/json"
         },
         body: JSON.stringify(user)
     }

@@ -10,17 +10,61 @@
 </head>
 
 <body>
-        <script>
-            const getDNS = "<%= DNS %>"
-        </script>
+    <script>
+        const getDNS = "<%= DNS %>"
+    </script>
     <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"
-        integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
-        crossorigin="anonymous"></script>
+        integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous">
+    </script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"
         integrity="sha512-rCZdHNB0AePry6kAnKAVFMRfWPmUXSo+/vlGtrOUvhsxD0Punm/xWbEh+8vppPIOzKB9xnk42yCRZ5MD/jvvjQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="mobile-sketch.js" async defer></script>
+    <div id="container">
+        <script src="mobile-sketch.js" async defer></script>
+    </div>
+    <!--
+<div class="flex-container">
+        <form>
+            <br>
+            <div class="input-group">
+                <label for="firstName" class="text">First Name:</label>
+                <br>
+                <input type="text" class="name" name="firstName">
+            </div>
+            <div class="input-group">
+                <label for="lastName" class="text">Last Name:</label>
+                <br>
+                <input type="text" class="name" name="lastName">
+            </div>
+            <div class="input-group">
+                <label for="name" class="text">Phone:</label> 
+                <br>
+                <input type="tel" class="name" name="phone">
+            </div>
+            <br> <br>
+            <button type="submit" class="send" value="SEND" >Send </button> 
+        </form>
+    </div>
+        -->
+    <div class="flex-container2" id="container">
+        <div>
+            <label for="firstName"> First Name</label>
+            <input type="text" name="firstName" id="firstName">
+        </div>
+
+        <div>
+            <label for="lastName">Last name</label>
+            <input type="text" name="lastName" id="lastName">
+        </div>
+        <div>
+            <label for="Phone">Phone</label>
+            <input type="tel" id="phone">
+        </div>
+
+        <button id="sendData">Send</button>
+    </div>
+
 </body>
 
 </html>
