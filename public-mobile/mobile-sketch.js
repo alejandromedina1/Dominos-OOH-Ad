@@ -77,21 +77,19 @@ function draw() {
         interface = nextInterface;
         if (interface === 'WON') {
             currentIndex = 1;
-        } else {
+        } 
+        if (interface === 'LOST') {
             currentIndex = 2;
+        }
+
+        if (interface === 'THANK-YOU') {
+            currentIndex = 3;
         }
     })
     image(currentScreen, 0, 0);
     image(mobileScreens[currentIndex], 0, 0)
     screens();
 
-    if (interface !== 'WON' || interface !== 'LOST') {
-        document.getElementById("container").style.display = "none";
-        //console.log('HIDE!')
-    } else {
-        document.getElementById("container").style.display = "block";
-        //console.log('SHOW!')
-    }
 }
 
 function screens() {
@@ -140,9 +138,10 @@ let phone = document.getElementById('phone');
 
 
 let button = document.getElementById('sendData')
+let bigContainer = document.getElementById('container2')
+   
 
-
-button.addEventListener("click", () => {
+button.addEventListener("touchend", () => {
     user = {
         firstName: firstName.value,
         lastName: lastName.value,
@@ -150,7 +149,16 @@ button.addEventListener("click", () => {
     }
     console.log(user)
     sendData(user);
-    interface = 'THANK YOU'
+    interface = 'THANK YOU';
+    socket.emit('interface', interface)
+
+    console.log(bigContainer);
+    
+    if (interface !== 'WON' || interface !== 'LOST') {
+        bigContainer.style.display = "none";
+    } else {
+        bigContainer.style.display = "block";
+    }
 })
 
 

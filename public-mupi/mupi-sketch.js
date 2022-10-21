@@ -20,25 +20,46 @@ let tokenIndex;
 let previousSignal = 0;
 let sensorState = false;
 let sensorIsActivated = false;
+let phrases = [];
+let phrasesIndex;
+let currentPhrase;
+var source = "mupi-assets/audio/dancing-song.mp3"
+var audio = document.createElement("audio");
+audio.autoplay = true
+
+audio.load()
+audio.addEventListener('load', () => {
+    audio.play()
+}, true)
+audio.src = source
+
+
 
 function preload() {
     mupiScreens[0] = loadImage('./mupi-assets/MUPI-Home.png');
-    mupiScreens[1] = loadImage('./mupi-assets/MUPI-connected.png');
-    mupiScreens[2] = loadImage('./mupi-assets/MUPI-instrucciones.png');
+    mupiScreens[1] = loadImage('./mupi-assets/MUPI-connected.gif');
+    mupiScreens[2] = loadImage('./mupi-assets/MUPI-instrucciones.gif');
     mupiScreens[3] = loadImage('./mupi-assets/MUPI-Game.png');
     mupiScreens[4] = loadImage('./mupi-assets/MUPI-Win.png');
     mupiScreens[5] = loadImage('./mupi-assets/MUPI-Loose.png');
     mupiScreens[6] = loadImage('./mupi-assets/MUPI-ThankYou.png');
 
+    //backgroundSong = loadSound('./mupi-assets/audio/dancing-song.ogg')
     currentIndex = 0;
 
     for (let i = 0; i < 4; i++) {
         tokens[i] = loadImage(`./mupi-assets/Tokens/${i+1}.png`)
     }
+    tokens[4] = loadImage('./mupi-assets/Tokens/animation.gif');
+
+    for (let i = 0; i < 6; i++) {
+        phrases[i] = loadImage(`./mupi-assets/phrases/${i+1}.gif`)
+    }
 }
 
 function setup() {
     frameRate(60);
+    //backgroundSong.play();
     canvas = createCanvas(windowWidth, windowHeight);
     canvas.style('z-index', '-1');
     canvas.style('position', 'fixed');
@@ -49,7 +70,9 @@ function setup() {
 
     referenceToken = tokens[indexGenerator()];
     tokenIndex = indexGenerator()
+    phrasesIndex = phraseGenerator();
     changingToken = tokens[tokenIndex];
+    currentPhrase = phrases[phrasesIndex];
 
     if (referenceToken === changingToken) {
         tokenIndex = indexGenerator()
@@ -65,10 +88,17 @@ function indexGenerator() {
     return randomIndex;
 }
 
+function phraseGenerator() {
+    let randomIndex = Math.floor(Math.random() * 6)
+    console.log(randomIndex);
+    return randomIndex
+}
+
 function draw() {
     background(255, 50)
     currentScreen = mupiScreens[currentIndex];
     changingToken = tokens[tokenIndex];
+    currentPhrase = phrases[phrasesIndex];
     image(currentScreen, 0, 0, 440, 660);
     changeScreen();
 }
@@ -105,6 +135,7 @@ async function changeScreen() {
             imageMode(CENTER)
             image(referenceToken, 145, 330, 231, 275)
             image(changingToken, 309, 330, 231, 275)
+            image(currentPhrase, 220, 320)
             imageMode(CORNER)
             countDown();
             /*sensorState = false;
@@ -147,6 +178,7 @@ async function changeScreen() {
             break;
         case 'THANK YOU':
             currentIndex = 6;
+            socket.emit('game-over', interface)
             fill('#333333')
             textAlign(CENTER, CENTER);
             textSize(30)
@@ -166,7 +198,7 @@ function countDown() {
     fill(255);
     textAlign(LEFT, CENTER)
     textFont('Laqonic4FUnicase-SemiBold')
-    text(counter, 226, 530);
+    text(counter, 226, 560);
     if (counter === 0) {
         interface = 'LOST'
         gameResult();
@@ -236,7 +268,11 @@ socket.on('arduino-message', signal => {
                 sensorState = true
                 if (sensorState && !sensorIsActivated) {
                     sensorIsActivated = true;
-                    tokenIndex = indexGenerator()
+                    tokenIndex = 4;
+                    phrasesIndex = phraseGenerator()
+                    setTimeout(() => {
+                        tokenIndex = indexGenerator()
+                    }, 5000)
                 } else if (!sensorState && sensorIsActivated) {
                     sensorIsActivated = false;
                 }
