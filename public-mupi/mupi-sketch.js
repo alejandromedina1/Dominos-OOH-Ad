@@ -5,7 +5,12 @@ let socket = io(NGROK, {
 })
 console.log('Server IP: ', NGROK)
 
-let userName = '';
+let leadCount = 0;
+let currentSignal = 0;
+let currentInterface = 'HOME'
+let clock = 0;
+let timePassed = 30
+let userName = undefined;
 let interface = 'HOME';
 let deviceWidth, deviceHeight = 0;
 let time = 0;
@@ -44,7 +49,7 @@ function preload() {
     mupiScreens[5] = loadImage('./mupi-assets/MUPI-Loose.png');
     mupiScreens[6] = loadImage('./mupi-assets/MUPI-ThankYou.png');
 
-    //backgroundSong = loadSound('./mupi-assets/audio/dancing-song.ogg')
+    
     currentIndex = 0;
 
     for (let i = 0; i < 4; i++) {
@@ -59,7 +64,6 @@ function preload() {
 
 function setup() {
     frameRate(60);
-    //backgroundSong.play();
     canvas = createCanvas(windowWidth, windowHeight);
     canvas.style('z-index', '-1');
     canvas.style('position', 'fixed');
@@ -80,6 +84,7 @@ function setup() {
             tokenIndex = indexGenerator()
         }
     }
+    leadCount = getLeadCount();
 }
 
 function indexGenerator() {
@@ -101,34 +106,104 @@ function draw() {
     currentPhrase = phrases[phrasesIndex];
     image(currentScreen, 0, 0, 440, 660);
     changeScreen();
+    endInteraction();
+    
+}
+
+function endInteraction() {
+    if (interface !== 'HOME' && interface !== 'WON' && interface !== 'LOST'&& interface !== 'THANK YOU' &&currentSignal === 0 ) {
+        clock++;
+        if (clock % 60 == 0) {
+            timePassed --;
+        }
+        if (timePassed <= 0) {
+            clock = 0
+            timePassed = 30
+            addNoLead()
+            window.location.reload();
+        }
+    }
+    if ( interface !== 'HOME' && interface !== 'WON' && interface !== 'LOST' && interface !== 'THANK YOU' && currentSignal === 1) {
+        timePassed = 30;
+        clock = 0;
+    }
+
+    if (interface === "WON" && clock === 0|| interface === "LOST" && interface !== 'THANK YOU' && currentSignal === 1) {
+        timePassed = 180;
+        clock = 0;
+    }
+
+    if (interface === 'WON' && currentSignal === 0 || interface === 'WON' && currentSignal === 0 ) {
+        clock++;
+        if (clock % 60 == 0) {
+            timePassed --;
+        }
+        if (timePassed <= 0) {
+            clock = 0
+            timePassed = 180
+            addNoLead()
+            window.location.reload();
+        }
+        if (currentSignal === 1) {
+            timePassed = 180;
+            clock = 0;
+        }
+    }
+
+    if (interface = "THANK YOU") {
+        if (clock % 60 == 0) {
+            timePassed --;
+        }
+        if (timePassed <= 0) {
+            clock = 0
+            timePassed = 30
+            window.location.reload();
+        }
+    }
+    
+}
+
+async function addNoLead() {
+    let user = null;
+    const request = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            user
+        })
+    }
+    await fetch('/add-no-lead', request);
+}
+
+function countDown() {
+    time++;
+    if (time % 60 == 0) {
+        counter--;
+    }
+    textSize(60);
+    fill("#777777");
+    textAlign(LEFT, CENTER)
+    textFont('Laqonic4FUnicase-SemiBold')
+    text(counter, 226, 550);
+    if (counter === 0) {
+        interface = 'LOST'
+        gameResult();
+    }
 }
 
 async function changeScreen() {
     switch (interface) {
         case 'HOME':
             currentIndex = 0;
-            /*socket.on('arduino-message', signal => {
-                if (signal.motionSignal !== 0) {
-                    interface = 'CONNECTED';
-                }
-            })*/
             break;
         case 'CONNECTED':
             currentIndex = 1;
-            /*socket.on('arduino-message', signal => {
-                if (signal.motionSignal !== 0) {
-                    interface = 'INSTRUCTIONS';
-                }
-            })*/
             break;
         case 'INSTRUCTIONS':
             fill(0)
             currentIndex = 2;
-            /*socket.on('arduino-message', signal => {
-                if (signal.motionSignal !== 0) {
-                    interface = 'GAME';
-                }
-            })*/
             break;
         case 'GAME':
             currentIndex = 3;
@@ -151,30 +226,30 @@ async function changeScreen() {
                     }
                 }
             })*/
-            if (referenceToken === changingToken) {
+            /*if (referenceToken === changingToken) {
                 setTimeout(() => {
                     interface = 'WON'
                     gameResult();
                 }, 3000)
-            }
+            }*/
             break;
         case 'WON':
             tokenIndex = undefined;
             counter = 60;
-            socket.emit('game-over', interface)
             console.log(interface);
             sensorState = false;
             sensorIsActivated = false;
             currentIndex = 4;
+
             break;
         case 'LOST':
-            socket.emit('game-over', interface)
             tokenIndex = undefined;
             counter = 60;
             console.log(interface);
             sensorState = false;
             sensorIsActivated = false;
             currentIndex = 5;
+
             break;
         case 'THANK YOU':
             currentIndex = 6;
@@ -189,21 +264,6 @@ async function changeScreen() {
     }
 }
 
-function countDown() {
-    time++;
-    if (time % 60 == 0) {
-        counter--;
-    }
-    textSize(60);
-    fill(255);
-    textAlign(LEFT, CENTER)
-    textFont('Laqonic4FUnicase-SemiBold')
-    text(counter, 226, 560);
-    if (counter === 0) {
-        interface = 'LOST'
-        gameResult();
-    }
-}
 
 async function gameResult() {
     let result;
@@ -240,11 +300,22 @@ socket.on('currentInterface', newInterface => {
     interface = newInterface;
 })
 
-socket.on('catchingUser', newUser => {
-    userName = newUser.firstName;
-})
 
-socket.on('arduino-message', signal => {
+async function getLeadCount() {
+    const query = await fetch('http://localhost:5050/leads')
+    const data = await query.json();
+    return data.length
+
+}
+
+async function getUserName() {
+    const query = await fetch('http://localhost:5050/add-new-lead')
+    const data = await query.json();
+    userName = data.name
+}
+
+socket.on('arduino-message', (signal) => {
+    currentSignal = signal.motionSignal;
     switch (interface) {
         case 'HOME':
             if (signal.motionSignal !== 0) {
@@ -252,16 +323,19 @@ socket.on('arduino-message', signal => {
             }
             break;
         case 'CONNECTED':
+            currentInterface = interface;
             if (signal.motionSignal !== 0) {
                 interface = 'INSTRUCTIONS';
             }
             break;
         case 'INSTRUCTIONS':
+            currentInterface = interface;
             if (signal.motionSignal !== 0) {
                 interface = 'GAME';
             }
             break;
         case 'GAME':
+            currentInterface = interface;
             sensorState = false;
             sensorIsActivated = false;
             if (signal.motionSignal !== 0 && interface === 'GAME') {
@@ -277,15 +351,35 @@ socket.on('arduino-message', signal => {
                     sensorIsActivated = false;
                 }
             }
+            if (referenceToken === changingToken) {
+                    interface = 'WON'
+                    gameResult();
+            }
             break;
         case 'WON':
-
+            currentInterface = interface;
+            if (signal.motionSignal === 1) {
+                let currentLeadCount = getLeadCount()
+                getUserName();
+                console.log(typeof userName);
+                if (currentLeadCount !== leadCount && typeof userName === typeof '' ) {
+                    interface = 'THANK YOU'
+                }
+            }
             break;
         case 'LOST':
-
+            currentInterface = interface;
+            if (signal.motionSignal === 1) {
+                let currentLeadCount = getLeadCount()
+                getUserName();
+                console.log(typeof userName);
+                if (currentLeadCount !== leadCount && typeof userName === typeof '') {
+                    interface = 'THANK YOU'
+                }
+            }
             break;
-        case 'THANK YOU':
-
+        case "THANK YOU":
+            currentInterface = interface;
             break;
     }
 })
