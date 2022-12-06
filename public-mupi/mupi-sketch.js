@@ -106,7 +106,7 @@ function draw() {
     currentPhrase = phrases[phrasesIndex];
     image(currentScreen, 0, 0, 440, 660);
     changeScreen();
-    endInteraction();
+    //endInteraction();
     
 }
 
